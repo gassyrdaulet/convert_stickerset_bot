@@ -5,10 +5,9 @@ import archiver from "archiver";
 import sharp from "sharp";
 import ffmpeg from "fluent-ffmpeg";
 
-const { token: BOT_TOKEN } = JSON.parse(
+const { BOT_TOKEN, AUTHOR_NAME } = JSON.parse(
   fs.readFileSync("./token.json").toString()
 );
-const AUTHOR_NAME = "gassyrdaulet.com";
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 console.log("Бот успешно запущен.");
