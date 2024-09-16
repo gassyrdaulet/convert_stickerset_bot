@@ -11,6 +11,7 @@ const { token: BOT_TOKEN } = JSON.parse(
 const AUTHOR_NAME = "gassyrdaulet.com";
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+console.log("Бот успешно запущен.");
 
 const processing = [];
 
