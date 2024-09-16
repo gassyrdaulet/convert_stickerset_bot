@@ -5,6 +5,8 @@ import archiver from "archiver";
 import sharp from "sharp";
 import ffmpeg from "fluent-ffmpeg";
 
+process.env.NTBA_FIX_350 = true; //get rid of a deprecation warning
+
 const { BOT_TOKEN, AUTHOR_NAME } = JSON.parse(
   fs.readFileSync("./token.json").toString()
 );
