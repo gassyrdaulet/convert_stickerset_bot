@@ -1,0 +1,22 @@
+{
+  "name": "stickerconverter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "axios": "^1.7.7",
+    "fluent-ffmpeg": "^2.1.3",
+    "lottie-converter": "^1.0.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "sharp": "^0.33.5",
+    "unzipper": "^0.12.3"
+  }
+}
