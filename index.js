@@ -129,7 +129,6 @@ bot.on("sticker", async (msg) => {
     }
 
     const { thumbnail, stickers, title } = await getStickerPack(stickerPackId);
-    await downloadThumb(thumbnail?.file_id, dir + "icon.png");
     if (stickers && Array.isArray(stickers)) {
       let steady = 0;
       let failed = 0;
@@ -140,6 +139,7 @@ bot.on("sticker", async (msg) => {
         const batchStickers = stickers.slice(i, i + 30);
         const batchDir = `${dir}pack_${packNumber}/`;
         fs.mkdirSync(batchDir, { recursive: true });
+        await downloadThumb(thumbnail?.file_id, batchDir + "icon.png");
         for (let sticker of batchStickers) {
           try {
             await bot.editMessageText(
@@ -181,6 +181,8 @@ bot.on("sticker", async (msg) => {
           spliceProcessing(msg.from.id);
           return;
         }
+        fs.writeFileSync(batchDir + "author.txt", AUTHOR_NAME);
+        fs.writeFileSync(batchDir + "title.txt", title);
         const zipArchivePath =
           `./${msg.from.id}/` + stickerPackId + `_pack${packNumber}.wastickers`;
         await zipDirectory(batchDir, zipArchivePath);
