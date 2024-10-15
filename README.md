@@ -1,15 +1,11 @@
 ﻿# convert_stickerset_bot
+Converting Telegram stickers to WhatsApp
 
-You will need to install «FFmpeg» on your machine, if you want this bot to be able to convert video stickers!
+Bot description:
+Send one sticker to this bot, and it will download the entire sticker pack that contains this sticker and convert it into a format for WhatsApp. 
+To import a sticker pack into WhatsApp, you will need the “Sticker Maker” program, which is available for free in the AppStore and PlayMarket.
+Please note that only regular and video stickers are supported (animated ones are not supported).
 
 Try it yourself: https://t.me/convert_stickerset_bot
 
-Bot description:
-
-Отправьте этому боту один стикер, и он скачает весь стикерпак в котором состоит этот стикер и переделает его в формат для WhatsApp. 
-
-Чтобы импортировать стикерпак в WhatsApp вам потребуется программа «Sticker Maker» которая доступна бесплатно в AppStore и PlayMarket.
-
-Обратите внимание, что поддерживаются только обычные и видео-стикеры (анимированные не поддерживаются), а также бот конвертирует только первые 30 стикеров из стикерпака.
-
-Нажмите /start для чтобы начать пользование.
+You will need to install «FFmpeg» on your machine, if you want this bot to be able to convert video stickers!
