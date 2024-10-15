@@ -127,7 +127,6 @@ bot.on("sticker", async (msg) => {
       spliceProcessing(msg.from.id);
       return;
     }
-
     const { thumbnail, stickers, title } = await getStickerPack(stickerPackId);
     if (stickers && Array.isArray(stickers)) {
       let steady = 0;
