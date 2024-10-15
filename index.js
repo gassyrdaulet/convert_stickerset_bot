@@ -12,7 +12,7 @@ const { BOT_TOKEN, AUTHOR_NAME } = JSON.parse(
 );
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-console.log("Бот успешно запущен.");
+console.log("Bot successfully started.");
 
 const processing = [];
 
@@ -41,7 +41,7 @@ async function getStickerPack(stickerPackId) {
     const pack = await bot.getStickerSet(stickerPackId);
     return pack;
   } catch (error) {
-    console.log("Ошибка при получении стикерпака:", error);
+    console.log("Failed to receive stickerpack.:", error);
   }
 }
 
@@ -108,13 +108,10 @@ bot.on("message", async (msg) => {
 bot.on("sticker", async (msg) => {
   if (processing.includes(msg.from.id)) return;
   if (processing.length > 10) {
-    bot.sendMessage(
-      msg.chat.id,
-      "Бот перегружен. Пожалуйста, попробуйте еще раз позже."
-    );
+    bot.sendMessage(msg.chat.id, "Bot is busy. Please try again later");
     return;
   }
-  const loadingMessage = await bot.sendMessage(msg.chat.id, "Загрузка...");
+  const loadingMessage = await bot.sendMessage(msg.chat.id, "Loading...");
   processing.push(msg.from.id);
   try {
     const dir = `./${msg.from.id}/temp/`;
@@ -124,7 +121,7 @@ bot.on("sticker", async (msg) => {
     const { sticker } = msg;
     const stickerPackId = sticker?.set_name;
     if (!stickerPackId) {
-      bot.sendMessage(msg.chat.id, "Не удалось определить стикерпак.", {
+      bot.sendMessage(msg.chat.id, "Failed to receive stickerpack..", {
         reply_to_message_id: msg.message_id,
       });
       spliceProcessing(msg.from.id);
@@ -138,39 +135,69 @@ bot.on("sticker", async (msg) => {
       let failed = 0;
       let video = 0;
       let success = 0;
-      for (let sticker of stickers) {
-        if (success >= 30) break;
-        try {
-          await bot.editMessageText(
-            `Конвертация стикеров: ${success}/${
-              stickers.length > 30 ? 30 : stickers.length
-            }`,
+      for (let i = 0; i < stickers.length; i += 30) {
+        const packNumber = Math.ceil((i + 1) / 30);
+        const batchStickers = stickers.slice(i, i + 30);
+        const batchDir = `${dir}pack_${packNumber}/`;
+        fs.mkdirSync(batchDir, { recursive: true });
+        for (let sticker of batchStickers) {
+          try {
+            await bot.editMessageText(
+              `Converting: ${success}/${stickers.length}`,
+              {
+                chat_id: msg.chat.id,
+                message_id: loadingMessage.message_id,
+              }
+            );
+          } catch {}
+          const fileId = sticker.file_id;
+          try {
+            if (sticker.is_animated) continue;
+            if (sticker.is_video) {
+              await downloadVideoSticker(
+                fileId,
+                batchDir + fileId,
+                msg.from.id
+              );
+              video++;
+            } else {
+              await downloadSticker(fileId, batchDir + fileId);
+              steady++;
+            }
+            success++;
+          } catch {
+            failed++;
+          }
+        }
+        if (packNumber === 1 && success < 3) {
+          await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
+          bot.sendMessage(
+            msg.chat.id,
+            "Less than 3 stickers uploaded. The stickerpack is not valid.",
             {
-              chat_id: msg.chat.id,
-              message_id: loadingMessage.message_id,
+              reply_to_message_id: msg.message_id,
             }
           );
-        } catch {}
-        const fileId = sticker.file_id;
-        try {
-          if (sticker.is_animated) continue;
-          if (sticker.is_video) {
-            await downloadVideoSticker(fileId, dir + fileId, msg.from.id);
-            video++;
-          } else {
-            await downloadSticker(fileId, dir + fileId);
-            steady++;
-          }
-          success++;
-        } catch {
-          failed++;
+          spliceProcessing(msg.from.id);
+          return;
         }
+        const zipArchivePath =
+          `./${msg.from.id}/` + stickerPackId + `_pack${packNumber}.wastickers`;
+        await zipDirectory(batchDir, zipArchivePath);
+        await bot.sendDocument(
+          msg.chat.id,
+          fs.createReadStream(zipArchivePath),
+          {
+            reply_to_message_id: msg.message_id,
+            caption: `${packNumber} часть.`,
+          }
+        );
       }
       if (success === 0) {
         await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
         bot.sendMessage(
           msg.chat.id,
-          "Не загружено ни одного стикера. Убедитесь, что отправленный вами стикер из обычного или видео стикерпака (не анимированного).",
+          "No stickers have been uploaded. Make sure that the sticker you sent is from a regular or video sticker pack (not animated).",
           {
             reply_to_message_id: msg.message_id,
           }
@@ -178,50 +205,31 @@ bot.on("sticker", async (msg) => {
         spliceProcessing(msg.from.id);
         return;
       }
-      if (success < 3) {
-        await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
-        bot.sendMessage(
-          msg.chat.id,
-          "Выгрузилось меньше 3 стикеров. Стикерпак не действителен.",
-          {
-            reply_to_message_id: msg.message_id,
-          }
-        );
-        spliceProcessing(msg.from.id);
-        return;
-      }
-      fs.writeFileSync(dir + "author.txt", AUTHOR_NAME);
-      fs.writeFileSync(dir + "title.txt", title);
-      const zipArchivePath =
-        `./${msg.from.id}/` + stickerPackId + ".wastickers";
-      await zipDirectory(dir, zipArchivePath);
-
       await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
-      await bot.sendDocument(msg.chat.id, fs.createReadStream(zipArchivePath), {
-        reply_to_message_id: msg.message_id,
-        caption: `Конвертация стикерпака «${title}» завершена.\nЗагружено стикеров: ${success} шт.\nОбычные стикеры: ${steady} шт.\nВидео-стикеры: ${video} шт.\nНе удалось сконвертировать: ${failed} шт.`,
-      });
+      await bot.sendMessage(
+        msg.chat.id,
+        `Conversion of the “${title}” sticker pack is complete.\nStickers loaded: ${success} pcs.\nRegular stickers: ${steady} pcs.\nVideo stickers: ${video} pcs.\nFailed to convert: ${failed} pcs.`,
+        {
+          reply_to_message_id: msg.message_id,
+        }
+      );
       fs.rmSync(`./${msg.from.id}/`, { recursive: true, force: true });
       spliceProcessing(msg.from.id);
     } else {
       await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
-      await bot.sendMessage(msg.chat.id, "Не удалось получить стикерпак.", {
+      await bot.sendMessage(msg.chat.id, "Failed to receive stickerpack.", {
         reply_to_message_id: msg.message_id,
       });
       spliceProcessing(msg.from.id);
     }
   } catch (e) {
     await bot.deleteMessage(msg.chat.id, loadingMessage.message_id);
-    await bot.sendMessage(
-      msg.chat.id,
-      "Не удалось сконвертировать стикерпак.",
-      {
-        reply_to_message_id: msg.message_id,
-      }
-    );
+    await bot.sendMessage(msg.chat.id, "Failed to convert stickerpack.", {
+      reply_to_message_id: msg.message_id,
+    });
     spliceProcessing(msg.from.id);
     console.log(
-      `Не удалось сконвертировать стикерпак (CHAT ID: ${msg.chat.id}):\n`,
+      `Failed to convert stickerpack. (CHAT ID: ${msg.chat.id}):\n`,
       e
     );
   }
